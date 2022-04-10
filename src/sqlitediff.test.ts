@@ -1,5 +1,7 @@
 import * as s from "better-sqlite3"
 import { Database } from "better-sqlite3"
+import * as A from "fp-ts/lib/Array"
+import { pipe } from "fp-ts/lib/function"
 
 interface Diff {
     tables_intersection: string[],
@@ -10,12 +12,18 @@ interface Diff {
 const sqlitediff:
     (db1: s.Database, db2: s.Database) => Diff =
     (db1, db2) => {
-        const db1_tables = db1.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'").raw().all()
-        return {
-            tables_db1_db2: db1_tables.map(x => x[0]),
-            tables_intersection: [],
-            tables_db2_db1: []
-        }
+        return pipe(
+            db1.prepare(
+                "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            ).raw().all() as [string][],
+            A.map(rawRow => rawRow[0]),
+            tableName => ({
+                tables_db1_db2: tableName,
+                tables_intersection: [],
+                tables_db2_db1: []
+            })
+        )
+
     }
 
 describe("sqlitediff", () => {
