@@ -22,7 +22,9 @@
     },
     "dependencies": {
         "@types/better-sqlite3": "^7.5.0",
+        "@types/lodash": "^4.14.181",
         "better-sqlite3": "^7.5.1",
-        "fp-ts": "^2.11.9"
+        "fp-ts": "^2.11.9",
+        "lodash": "^4.17.21"
     }
 }
