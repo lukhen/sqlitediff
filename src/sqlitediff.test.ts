@@ -32,7 +32,7 @@ const sqlitediff:
                 {
                     tables_db1_db2: _.difference(db1Tables, db2Tables),
                     tables_intersection: _.intersection(db1Tables, db2Tables),
-                    tables_db2_db1: []
+                    tables_db2_db1: _.difference(db2Tables, db1Tables)
                 }
             ))
         )
@@ -77,5 +77,20 @@ describe("sqlitediff", () => {
             tables_db2_db1: []
         })
     })
+
+    test("db2 has one empty table, db1 is empty", () => {
+        const db1 = new s.default(":memory:")
+
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE User (userid INTEGER PRIMARY KEY)").run()
+
+        expect(sqlitediff(db1, db2)()).toEqual({
+            tables_db1_db2: [],
+            tables_intersection: [],
+            tables_db2_db1: ["User"]
+        })
+    })
+
+
 
 })
