@@ -12,7 +12,7 @@ interface Diff {
     tables_db2_db1: string[]
 }
 
-const getTables: (db: s.Database) => IO.IO<[string][]> =
+const getRows: (db: s.Database) => IO.IO<[string][]> =
     db => () => db.prepare(
         "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'"
     ).raw().all() as [string][]
@@ -22,8 +22,8 @@ const sqlitediff:
     (db1, db2) => {
         return pipe(
             IO.Do,
-            IO.apS('db1Rows', getTables(db1)),
-            IO.apS('db2Rows', getTables(db2)),
+            IO.apS('db1Rows', getRows(db1)),
+            IO.apS('db2Rows', getRows(db2)),
             IO.map(({ db1Rows, db2Rows }) => ({
                 db1Tables: pipe(A.head(db1Rows), O.fold(() => [] as string[], row => row)),
                 db2Tables: pipe(A.head(db2Rows), O.fold(() => [] as string[], row => row)),
