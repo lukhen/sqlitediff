@@ -11,7 +11,7 @@ import * as E from "fp-ts/lib/Either"
 const failTest: (msg: string) => IO.IO<void> =
     msg => () => { expect(msg).toEqual(0) } // always fails
 
-interface Diff {
+interface SchemaDiff {
     tables_intersection: string[],
     tables_db1_db2: string[],
     tables_db2_db1: string[]
@@ -35,8 +35,8 @@ const getRowsTypeSafe: (db: s.Database) => E.Either<ts.Errors, row[]> =
         E.chain(queryCodec.decode)
     )
 
-const sqlitediff:
-    (db1: s.Database, db2: s.Database) => E.Either<ts.Errors, Diff> =
+const sqliteSchemaDiff:
+    (db1: s.Database, db2: s.Database) => E.Either<ts.Errors, SchemaDiff> =
     (db1, db2) => {
         return pipe(
             E.Do,
@@ -57,12 +57,12 @@ const sqlitediff:
         )
     }
 
-describe("sqlitediff", () => {
+describe("sqliteSchemaDiff", () => {
     test("empty databases", () => {
         const db1 = new s.default(":memory:")
         const db2 = new s.default(":memory:")
 
-        const diff = sqlitediff(db1, db2)
+        const diff = sqliteSchemaDiff(db1, db2)
         pipe(
             diff,
             E.fold(
@@ -86,7 +86,7 @@ describe("sqlitediff", () => {
 
         const db2 = new s.default(":memory:")
 
-        const diff = sqlitediff(db1, db2)
+        const diff = sqliteSchemaDiff(db1, db2)
         pipe(
             diff,
             E.fold(
@@ -111,7 +111,7 @@ describe("sqlitediff", () => {
         const db2 = new s.default(":memory:")
         db2.prepare("CREATE TABLE User (userid INTEGER PRIMARY KEY)").run()
 
-        const diff = sqlitediff(db1, db2)
+        const diff = sqliteSchemaDiff(db1, db2)
         pipe(
             diff,
             E.fold(
@@ -134,7 +134,7 @@ describe("sqlitediff", () => {
         const db2 = new s.default(":memory:")
         db2.prepare("CREATE TABLE User (userid INTEGER PRIMARY KEY)").run()
 
-        const diff = sqlitediff(db1, db2)
+        const diff = sqliteSchemaDiff(db1, db2)
         pipe(
             diff,
             E.fold(
@@ -167,7 +167,7 @@ describe("sqlitediff", () => {
         db2.prepare("CREATE TABLE Table7 (id INTEGER PRIMARY KEY)").run()
         db2.prepare("CREATE TABLE Table8 (id INTEGER PRIMARY KEY)").run()
 
-        const diff = sqlitediff(db1, db2)
+        const diff = sqliteSchemaDiff(db1, db2)
         pipe(
             diff,
             E.fold(
