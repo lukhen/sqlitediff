@@ -63,7 +63,122 @@ const getRowsTypeSafe: (db: s.Database) => E.Either<ts.Errors, row[]> =
         E.chain(queryCodec.decode)
     )
 
+const sqlitediff2:
+    (db1: s.Database, db2: s.Database) => E.Either<ts.Errors, Diff> =
+    (db1, db2) => {
+        return pipe(
+            E.Do,
+            E.apS('db1Rows', getRowsTypeSafe(db1)),
+            E.apS('db2Rows', getRowsTypeSafe(db2)),
+            E.map(({ db1Rows, db2Rows }) => ({
+                db1Tables: pipe(A.head(db1Rows), O.fold(() => [] as string[], row => [row.name])),
+                db2Tables: pipe(A.head(db2Rows), O.fold(() => [] as string[], row => [row.name]))
+            })),
+            E.map(({ db1Tables, db2Tables }) => (
+                {
+                    tables_db1_db2: _.difference(db1Tables, db2Tables),
+                    tables_intersection: _.intersection(db1Tables, db2Tables),
+                    tables_db2_db1: _.difference(db2Tables, db1Tables)
+                }
+            ))
 
+        )
+    }
+
+describe("sqlitediff2", () => {
+    test("empty databases", () => {
+        const db1 = new s.default(":memory:")
+        const db2 = new s.default(":memory:")
+
+        const diff = sqlitediff2(db1, db2)
+        pipe(
+            diff,
+            E.fold(
+                errors => { failTest },
+                diff => {
+                    expect(diff).toEqual({
+                        tables_db1_db2: [],
+                        tables_intersection: [],
+                        tables_db2_db1: []
+                    })
+                }
+            )
+        )
+    })
+
+
+
+    test("db1 has one empty table, db2 is empty", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE User (userid INTEGER PRIMARY KEY)").run()
+
+        const db2 = new s.default(":memory:")
+
+        const diff = sqlitediff2(db1, db2)
+        pipe(
+            diff,
+            E.fold(
+                errors => { failTest },
+                diff => {
+                    expect(diff).toEqual({
+                        tables_db1_db2: ["User"],
+                        tables_intersection: [],
+                        tables_db2_db1: []
+                    })
+
+                }
+            )
+        )
+    })
+
+
+    test("Each db1 and db2 have one equal empty table", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE User (userid INTEGER PRIMARY KEY)").run()
+
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE User (userid INTEGER PRIMARY KEY)").run()
+
+        const diff = sqlitediff2(db1, db2)
+        pipe(
+            diff,
+            E.fold(
+                errors => { failTest },
+                diff => {
+                    expect(diff).toEqual({
+                        tables_db1_db2: [],
+                        tables_intersection: ["User"],
+                        tables_db2_db1: []
+                    })
+
+                }
+            )
+        )
+    })
+
+    test("db2 has one empty table, db1 is empty", () => {
+        const db1 = new s.default(":memory:")
+
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE User (userid INTEGER PRIMARY KEY)").run()
+
+        const diff = sqlitediff2(db1, db2)
+        pipe(
+            diff,
+            E.fold(
+                errors => { failTest },
+                diff => {
+                    expect(diff).toEqual({
+                        tables_db1_db2: [],
+                        tables_intersection: [],
+                        tables_db2_db1: ["User"]
+                    })
+                }
+            )
+        )
+    })
+
+})
 
 
 describe("getRowsTypeSafe", () => {
