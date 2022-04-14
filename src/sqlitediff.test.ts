@@ -5,12 +5,24 @@ import { pipe } from "fp-ts/lib/function"
 import * as IO from "fp-ts/lib/IO"
 import * as O from "fp-ts/lib/Option"
 import * as _ from "lodash"
+import * as ts from "io-ts"
+import * as E from "fp-ts/lib/Either"
+
+const failTest: (msg: string) => IO.IO<void> =
+    msg => () => { expect(msg).toEqual(0) } // always fails
 
 interface Diff {
     tables_intersection: string[],
     tables_db1_db2: string[],
     tables_db2_db1: string[]
 }
+
+const rowCodec = ts.type({
+    name: ts.string
+})
+
+const queryCodec = ts.array(rowCodec)
+
 
 const getRows: (db: s.Database) => IO.IO<[string][]> =
     db => () => db.prepare(
@@ -38,6 +50,37 @@ const sqlitediff:
         )
 
     }
+
+interface row {
+    name: string
+}
+
+const getRowsTypeSafe: (db: s.Database) => E.Either<ts.Errors, row[]> =
+    db => pipe(
+        E.tryCatch(() => db.prepare(
+            "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        ).all(), (e) => [e as ts.ValidationError]),
+        E.chain(queryCodec.decode)
+    )
+
+
+
+
+describe("getRowsTypeSafe", () => {
+    test("", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE User (userid INTEGER PRIMARY KEY)").run()
+        const rows = getRowsTypeSafe(db1)
+        pipe(
+            rows,
+            E.fold(
+                errors => { failTest },
+                rows => { expect(rows).toEqual([{ name: "User" }]) }
+            )
+        )
+
+    })
+})
 
 describe("sqlitediff", () => {
     test("empty databases", () => {
