@@ -43,8 +43,8 @@ const sqlitediff:
             E.apS('db1Rows', getRowsTypeSafe(db1)),
             E.apS('db2Rows', getRowsTypeSafe(db2)),
             E.map(({ db1Rows, db2Rows }) => ({
-                db1Tables: pipe(A.head(db1Rows), O.fold(() => [] as string[], row => [row.name])),
-                db2Tables: pipe(A.head(db2Rows), O.fold(() => [] as string[], row => [row.name]))
+                db1Tables: pipe(db1Rows, A.map(row => row.name)),
+                db2Tables: pipe(db2Rows, A.map(row => row.name))
             })),
             E.map(({ db1Tables, db2Tables }) => (
                 {
@@ -149,6 +149,41 @@ describe("sqlitediff", () => {
             )
         )
     })
+
+
+    test("multiple tables", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE Table1 (id INTEGER PRIMARY KEY)").run()
+        db1.prepare("CREATE TABLE Table2 (id INTEGER PRIMARY KEY)").run()
+        db1.prepare("CREATE TABLE Table3 (id INTEGER PRIMARY KEY)").run()
+        db1.prepare("CREATE TABLE Table4 (id INTEGER PRIMARY KEY)").run()
+        db1.prepare("CREATE TABLE Table5 (id INTEGER PRIMARY KEY)").run()
+
+
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE Table4 (id INTEGER PRIMARY KEY)").run()
+        db2.prepare("CREATE TABLE Table5 (id INTEGER PRIMARY KEY)").run()
+        db2.prepare("CREATE TABLE Table6 (id INTEGER PRIMARY KEY)").run()
+        db2.prepare("CREATE TABLE Table7 (id INTEGER PRIMARY KEY)").run()
+        db2.prepare("CREATE TABLE Table8 (id INTEGER PRIMARY KEY)").run()
+
+        const diff = sqlitediff(db1, db2)
+        pipe(
+            diff,
+            E.fold(
+                errors => { failTest },
+                diff => {
+                    expect(diff).toEqual({
+                        tables_db1_db2: ["Table1", "Table2", "Table3"],
+                        tables_intersection: ["Table4", "Table5"],
+                        tables_db2_db1: ["Table6", "Table7", "Table8"]
+                    })
+
+                }
+            )
+        )
+    })
+
 
 })
 
