@@ -35,7 +35,7 @@ const getRowsTypeSafe: (db: s.Database) => E.Either<ts.Errors, row[]> =
         E.chain(queryCodec.decode)
     )
 
-const sqlitediff2:
+const sqlitediff:
     (db1: s.Database, db2: s.Database) => E.Either<ts.Errors, Diff> =
     (db1, db2) => {
         return pipe(
@@ -57,12 +57,12 @@ const sqlitediff2:
         )
     }
 
-describe("sqlitediff2", () => {
+describe("sqlitediff", () => {
     test("empty databases", () => {
         const db1 = new s.default(":memory:")
         const db2 = new s.default(":memory:")
 
-        const diff = sqlitediff2(db1, db2)
+        const diff = sqlitediff(db1, db2)
         pipe(
             diff,
             E.fold(
@@ -86,7 +86,7 @@ describe("sqlitediff2", () => {
 
         const db2 = new s.default(":memory:")
 
-        const diff = sqlitediff2(db1, db2)
+        const diff = sqlitediff(db1, db2)
         pipe(
             diff,
             E.fold(
@@ -111,7 +111,7 @@ describe("sqlitediff2", () => {
         const db2 = new s.default(":memory:")
         db2.prepare("CREATE TABLE User (userid INTEGER PRIMARY KEY)").run()
 
-        const diff = sqlitediff2(db1, db2)
+        const diff = sqlitediff(db1, db2)
         pipe(
             diff,
             E.fold(
@@ -134,7 +134,7 @@ describe("sqlitediff2", () => {
         const db2 = new s.default(":memory:")
         db2.prepare("CREATE TABLE User (userid INTEGER PRIMARY KEY)").run()
 
-        const diff = sqlitediff2(db1, db2)
+        const diff = sqlitediff(db1, db2)
         pipe(
             diff,
             E.fold(
