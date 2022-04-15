@@ -33,5 +33,19 @@ describe("", () => {
         expect(cols).toEqual(E.right([{ name: "id" }]))
     })
 
+    test("one column", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare(
+            "CREATE TABLE table1 (col1 INTEGER PRIMARY KEY, col2 INTEGER, col3 INTEGER, col4 INTEGER, col5 INTEGER)").run()
+        const cols = getColumns("table1")(db1)
+        expect(cols).toEqual(E.right([
+            { name: "col1" },
+            { name: "col2" },
+            { name: "col3" },
+            { name: "col4" },
+            { name: "col5" }
+        ]))
+    })
+
 
 })
