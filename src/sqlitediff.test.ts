@@ -40,13 +40,6 @@ const getQueryResult:
 
 const getRowsTypeSafe = getQueryResult<row>("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'")(queryCodec)
 
-const getRowsTypeSafe_old: (db: s.Database) => E.Either<ts.Errors, row[]> =
-    db => pipe(
-        E.tryCatch(() => db.prepare(
-            "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-        ).all(), (e) => [e as ts.ValidationError]),
-        E.chain(queryCodec.decode)
-    )
 
 const sqliteSchemaDiff:
     (db1: s.Database, db2: s.Database) => E.Either<ts.Errors, SchemaDiff> =
