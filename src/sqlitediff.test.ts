@@ -1,47 +1,14 @@
 import * as s from "better-sqlite3"
-import { Database } from "better-sqlite3"
-import * as A from "fp-ts/lib/Array"
 import { pipe } from "fp-ts/lib/function"
-import * as IO from "fp-ts/lib/IO"
-import * as O from "fp-ts/lib/Option"
-import * as _ from "lodash"
-import * as ts from "io-ts"
 import * as E from "fp-ts/lib/Either"
+import { failTest } from "./functions"
+import { getTables } from "./quries/dbtables"
+import { SchemaDiff } from "./types/SchemaDiff"
+import * as A from "fp-ts/lib/Array"
+import * as ts from "io-ts";
+import * as _ from "lodash"
 
-const failTest: (msg: string) => IO.IO<void> =
-    msg => () => { expect(msg).toEqual(0) } // always fails
-
-interface SchemaDiff {
-    tables_intersection: string[],
-    tables_db1_db2: string[],
-    tables_db2_db1: string[]
-}
-
-const tableCodec = ts.type({
-    name: ts.string
-})
-
-const tablesCodec = ts.array(tableCodec)
-
-interface Table {
-    name: string
-}
-
-interface Decoder<X> {
-    decode: (x: any) => E.Either<ts.Errors, X>
-}
-
-const getQueryResult:
-    <Row>(query: string) => (decoder: Decoder<Row[]>) => (db: s.Database) => E.Either<ts.Errors, Row[]> =
-    (query) => decoder => db => pipe(
-        E.tryCatch(() => db.prepare(query).all(), (e) => [e as ts.ValidationError]),
-        E.chain(decoder.decode)
-    )
-
-const getTables = getQueryResult<Table>("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'")(tablesCodec)
-
-
-const sqliteSchemaDiff:
+export const sqliteSchemaDiff:
     (db1: s.Database, db2: s.Database) => E.Either<ts.Errors, SchemaDiff> =
     (db1, db2) => {
         return pipe(
@@ -62,6 +29,7 @@ const sqliteSchemaDiff:
 
         )
     }
+
 
 describe("sqliteSchemaDiff", () => {
     test("empty databases", () => {
