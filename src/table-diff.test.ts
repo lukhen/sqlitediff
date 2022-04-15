@@ -16,7 +16,7 @@ interface Column {
 
 const getColumns:
     (tableName: string) => (db: s.Database) => E.Either<ts.Errors, Column[]> =
-    tableName => getQueryResult<Column>("SELECT name FROM PRAGMA_TABLE_INFO('table1')")(columnsCodec)
+    tableName => getQueryResult<Column>(`SELECT name FROM PRAGMA_TABLE_INFO('${tableName}')`)(columnsCodec)
 
 
 describe("", () => {
@@ -38,6 +38,20 @@ describe("", () => {
         db1.prepare(
             "CREATE TABLE table1 (col1 INTEGER PRIMARY KEY, col2 INTEGER, col3 INTEGER, col4 INTEGER, col5 INTEGER)").run()
         const cols = getColumns("table1")(db1)
+        expect(cols).toEqual(E.right([
+            { name: "col1" },
+            { name: "col2" },
+            { name: "col3" },
+            { name: "col4" },
+            { name: "col5" }
+        ]))
+    })
+
+    test("one column, different table name", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare(
+            "CREATE TABLE table2 (col1 INTEGER PRIMARY KEY, col2 INTEGER, col3 INTEGER, col4 INTEGER, col5 INTEGER)").run()
+        const cols = getColumns("table2")(db1)
         expect(cols).toEqual(E.right([
             { name: "col1" },
             { name: "col2" },
