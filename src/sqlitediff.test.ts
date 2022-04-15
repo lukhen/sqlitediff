@@ -17,28 +17,28 @@ interface SchemaDiff {
     tables_db2_db1: string[]
 }
 
-const rowCodec = ts.type({
+const tableCodec = ts.type({
     name: ts.string
 })
 
-const queryCodec = ts.array(rowCodec)
+const tablesCodec = ts.array(tableCodec)
 
-interface row {
+interface Table {
     name: string
 }
 
 interface Decoder<X> {
-    decode: (x: any) => E.Either<ts.Errors, X[]>
+    decode: (x: any) => E.Either<ts.Errors, X>
 }
 
 const getQueryResult:
-    <X>(query: string) => (decoder: Decoder<X>) => (db: s.Database) => E.Either<ts.Errors, X[]> =
+    <Row>(query: string) => (decoder: Decoder<Row[]>) => (db: s.Database) => E.Either<ts.Errors, Row[]> =
     (query) => decoder => db => pipe(
         E.tryCatch(() => db.prepare(query).all(), (e) => [e as ts.ValidationError]),
         E.chain(decoder.decode)
     )
 
-const getRowsTypeSafe = getQueryResult<row>("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'")(queryCodec)
+const getTables = getQueryResult<Table>("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'")(tablesCodec)
 
 
 const sqliteSchemaDiff:
@@ -46,17 +46,17 @@ const sqliteSchemaDiff:
     (db1, db2) => {
         return pipe(
             E.Do,
-            E.apS('db1Rows', getRowsTypeSafe(db1)),
-            E.apS('db2Rows', getRowsTypeSafe(db2)),
-            E.map(({ db1Rows, db2Rows }) => ({
-                db1Tables: pipe(db1Rows, A.map(row => row.name)),
-                db2Tables: pipe(db2Rows, A.map(row => row.name))
+            E.apS('db1Tables', getTables(db1)),
+            E.apS('db2Tables', getTables(db2)),
+            E.map(({ db1Tables, db2Tables }) => ({
+                db1TableNames: pipe(db1Tables, A.map(table => table.name)),
+                db2TableNames: pipe(db2Tables, A.map(table => table.name))
             })),
-            E.map(({ db1Tables, db2Tables }) => (
+            E.map(({ db1TableNames, db2TableNames }) => (
                 {
-                    tables_db1_db2: _.difference(db1Tables, db2Tables),
-                    tables_intersection: _.intersection(db1Tables, db2Tables),
-                    tables_db2_db1: _.difference(db2Tables, db1Tables)
+                    tables_db1_db2: _.difference(db1TableNames, db2TableNames),
+                    tables_intersection: _.intersection(db1TableNames, db2TableNames),
+                    tables_db2_db1: _.difference(db2TableNames, db1TableNames)
                 }
             ))
 
@@ -198,7 +198,7 @@ describe("getRowsTypeSafe", () => {
     test("", () => {
         const db1 = new s.default(":memory:")
         db1.prepare("CREATE TABLE User (userid INTEGER PRIMARY KEY)").run()
-        const rows = getRowsTypeSafe(db1)
+        const rows = getTables(db1)
         pipe(
             rows,
             E.fold(
