@@ -31,7 +31,7 @@ describe("get columns of a table query", () => {
         ]))
     })
 
-    test("one column, different table name", () => {
+    test("one column, differe3nt table name", () => {
         const db1 = new s.default(":memory:")
         db1.prepare(
             "CREATE TABLE table2 (col1 INTEGER PRIMARY KEY, col2 INTEGER, col3 INTEGER, col4 INTEGER, col5 INTEGER)").run()
