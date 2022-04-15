@@ -27,7 +27,20 @@ interface row {
     name: string
 }
 
-const getRowsTypeSafe: (db: s.Database) => E.Either<ts.Errors, row[]> =
+interface Decoder<X> {
+    decode: (x: any) => E.Either<ts.Errors, X[]>
+}
+
+const getQueryResult:
+    <X>(query: string) => (decoder: Decoder<X>) => (db: s.Database) => E.Either<ts.Errors, X[]> =
+    (query) => decoder => db => pipe(
+        E.tryCatch(() => db.prepare(query).all(), (e) => [e as ts.ValidationError]),
+        E.chain(decoder.decode)
+    )
+
+const getRowsTypeSafe = getQueryResult<row>("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'")(queryCodec)
+
+const getRowsTypeSafe_old: (db: s.Database) => E.Either<ts.Errors, row[]> =
     db => pipe(
         E.tryCatch(() => db.prepare(
             "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'"
