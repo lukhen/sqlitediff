@@ -7,7 +7,7 @@ describe("get columns of a table query", () => {
     test("no such table", () => {
         const db1 = new s.default(":memory:")
         const cols = getColumns("table1")(db1)
-        expect(cols).toEqual(E.right([]))
+        expect(cols).toEqual(E.left([{ context: [], message: "no such table", value: {} }]))
     })
 
     test("one column", () => {
