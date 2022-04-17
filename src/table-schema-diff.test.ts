@@ -6,12 +6,7 @@ import { pipe } from "fp-ts/lib/function"
 import * as ts from "io-ts"
 import * as _ from "lodash"
 import * as A from "fp-ts/lib/Array"
-
-interface TableSchemaDiff {
-    intersection: string[],
-    db1_db2: string[],
-    db2_db1: string[]
-}
+import { TableSchemaDiff } from "./types/TableSchemaDiff"
 
 const sqliteTableSchemaDiff:
     (tableName: string, db1: s.Database, db2: s.Database) => E.Either<ts.Errors, TableSchemaDiff> =
@@ -172,6 +167,29 @@ describe("sqliteTableSchemaDiff", () => {
                     intersection: ["col1"],
                     db1_db2: [],
                     db2_db1: ["col2"]
+
+                }))
+            )
+        )
+    })
+
+    test("multiple different columns", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY, col2 INTEGER, col3 INTEGER, col4 INTEGER, col5 INTEGER)").run()
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE table1 (col4 INTEGER PRIMARY KEY, col5 INTEGER, col6 INTEGER, col7 INTEGER, col8 INTEGER)").run()
+        const diff = sqliteTableSchemaDiff("table1", db1, db2)
+        pipe(
+            diff,
+            E.fold(
+                errors => {
+                    failTest("this should not be reached")()
+                },
+                diff => (expect(diff).toEqual({
+
+                    intersection: ["col4", "col5"],
+                    db1_db2: ["col1", "col2", "col3"],
+                    db2_db1: ["col6", "col7", "col8"]
 
                 }))
             )
