@@ -25,7 +25,7 @@ const sqliteTableSchemaDiff:
                 db2ColNames: pipe(db2Cols, A.map(col => col.name))
             })),
             E.map(({ db1ColNames, db2ColNames }) => ({
-                intersection: [],
+                intersection: _.intersection(db1ColNames, db2ColNames),
                 db1_db2: _.difference(db1ColNames, db2ColNames),
                 db2_db1: _.difference(db2ColNames, db1ColNames)
             }))
@@ -100,7 +100,7 @@ describe("sqliteTableSchemaDiff", () => {
                     failTest("this should not be reached")()
                 },
                 diff => (expect(diff).toEqual({
-                    intersection: [],
+                    intersection: ["col1"],
                     db1_db2: [],
                     db2_db1: []
 
@@ -131,4 +131,52 @@ describe("sqliteTableSchemaDiff", () => {
             )
         )
     })
+
+    test("one table has one column more that the other, db1 > db2", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY, col2 INTEGER)").run()
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        const diff = sqliteTableSchemaDiff("table1", db1, db2)
+        pipe(
+            diff,
+            E.fold(
+                errors => {
+                    failTest("this should not be reached")()
+                },
+                diff => (expect(diff).toEqual({
+
+                    intersection: ["col1"],
+                    db1_db2: ["col2"],
+                    db2_db1: []
+
+                }))
+            )
+        )
+    })
+
+    test("one table has one column more that the other, db1 < db2", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY, col2 INTEGER)").run()
+        const diff = sqliteTableSchemaDiff("table1", db1, db2)
+        pipe(
+            diff,
+            E.fold(
+                errors => {
+                    failTest("this should not be reached")()
+                },
+                diff => (expect(diff).toEqual({
+
+                    intersection: ["col1"],
+                    db1_db2: [],
+                    db2_db1: ["col2"]
+
+                }))
+            )
+        )
+    })
+
+
 })
