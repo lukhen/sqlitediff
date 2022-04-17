@@ -17,7 +17,7 @@ const sqliteTableSchemaDiff:
         return pipe(
             E.Do,
             E.apS("db1Cols", getColumns(tableName)(db1)),
-            E.apS("db2Cols", getColumns(tableName)(db1)),
+            E.apS("db2Cols", getColumns(tableName)(db2)),
             E.map(({ db1Cols, db2Cols }) => ({
                 intersection: [],
                 db1_db2: [],
@@ -44,4 +44,41 @@ describe("sqliteTableSchemaDiff", () => {
             )
         )
     })
+
+    test("db1 empty, db2 not empty", () => {
+        const db1 = new s.default(":memory:")
+        const db2 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        const diff = sqliteTableSchemaDiff("table1", db1, db2)
+        pipe(
+            diff,
+            E.fold(
+                errors => {
+                    expect(errors[0].message).toEqual("no such table")
+                },
+                diff => {
+                    failTest("this should not be reached")()
+                }
+            )
+        )
+    })
+
+    test("db1 unempty, db2 empty", () => {
+        const db1 = new s.default(":memory:")
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        const diff = sqliteTableSchemaDiff("table1", db1, db2)
+        pipe(
+            diff,
+            E.fold(
+                errors => {
+                    expect(errors[0].message).toEqual("no such table")
+                },
+                diff => {
+                    failTest("this should not be reached")()
+                }
+            )
+        )
+    })
+
 })
