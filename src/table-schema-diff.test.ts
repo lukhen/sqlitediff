@@ -81,4 +81,27 @@ describe("sqliteTableSchemaDiff", () => {
         )
     })
 
+    test("databases have the table, both tables have one the same column", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        const diff = sqliteTableSchemaDiff("table1", db1, db2)
+        pipe(
+            diff,
+            E.fold(
+                errors => {
+                    failTest("this should not be reached")()
+                },
+                diff => ({
+
+                    intersection: [],
+                    db1_db2: [],
+                    db2_db1: []
+
+                })
+            )
+        )
+    })
+
 })
