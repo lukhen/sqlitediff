@@ -34,5 +34,46 @@ describe("sqliteDataDiff", () => {
         )
     })
 
+    test("no such table in db2", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        const db2 = new s.default(":memory:")
+
+        const diff = sqliteDataDiff("table1", db1, db2)
+
+        pipe(
+            diff,
+            E.fold(
+                errors => {
+                    expect(errors[0].message).toEqual("no such table")
+                },
+                diff => {
+                    failTest("this should not be reached")()
+                }
+            )
+        )
+    })
+
+    test("no such table in db1", () => {
+        const db1 = new s.default(":memory:")
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+
+        const diff = sqliteDataDiff("table1", db1, db2)
+
+        pipe(
+            diff,
+            E.fold(
+                errors => {
+                    expect(errors[0].message).toEqual("no such table")
+                },
+                diff => {
+                    failTest("this should not be reached")()
+                }
+            )
+        )
+    })
+
+
 
 })
