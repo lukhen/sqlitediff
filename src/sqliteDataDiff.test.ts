@@ -93,7 +93,7 @@ describe("sqliteDataDiff", () => {
     })
 
 
-    test("same empty columns", () => {
+    test("single equal columns, no data (rows)", () => {
         const db1 = new s.default(":memory:")
         db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
         const db2 = new s.default(":memory:")
