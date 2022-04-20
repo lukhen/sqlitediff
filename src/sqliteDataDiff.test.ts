@@ -32,8 +32,8 @@ const sqliteDataDiff:
 
     )
 
-describe("sqliteDataDiff", () => {
-    test("no such table in both databases", () => {
+describe("sqliteDataDiff, no such table", () => {
+    test("in both databases", () => {
         const db1 = new s.default(":memory:")
         const db2 = new s.default(":memory:")
 
@@ -52,7 +52,7 @@ describe("sqliteDataDiff", () => {
         )
     })
 
-    test("no such table in db2", () => {
+    test("in db2", () => {
         const db1 = new s.default(":memory:")
         db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
         const db2 = new s.default(":memory:")
@@ -72,7 +72,7 @@ describe("sqliteDataDiff", () => {
         )
     })
 
-    test("no such table in db1", () => {
+    test("in db1", () => {
         const db1 = new s.default(":memory:")
         const db2 = new s.default(":memory:")
         db2.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
@@ -91,9 +91,11 @@ describe("sqliteDataDiff", () => {
             )
         )
     })
+})
 
+describe("single equal columns in both databases", () => {
 
-    test("single equal columns, no data (rows)", () => {
+    test("no data (rows)", () => {
         const db1 = new s.default(":memory:")
         db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
         const db2 = new s.default(":memory:")
@@ -118,4 +120,5 @@ describe("sqliteDataDiff", () => {
             )
         )
     })
+
 })
