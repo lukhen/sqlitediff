@@ -5,15 +5,26 @@ import { failTest } from "./functions"
 import { pipe } from "fp-ts/lib/function"
 import * as ts from "io-ts"
 import * as _ from "lodash"
-
-interface Row {
+import * as A from "fp-ts/lib/Array"
+import { sequenceT } from "fp-ts/lib/Apply"
+interface Data {
+    colName: string,
+    value: string
 }
+
+type Row = Data[]
 
 interface DataDiff {
     db1_db2: Row[]
     db2_db1: Row[]
     intersection: Row[]
 }
+
+// !!!
+const getRows:
+    (columnNames: string[], tableName: string, db: s.Database) => E.Either<ts.Errors, Row[]> =
+    (columnNames, tableName, db) => E.right([])
+
 
 /*
 ASSUME: getColumns(tableName)(db1) == getColumns(tableName)(db2)
@@ -25,7 +36,16 @@ const sqliteDataDiff:
         E.apS("db1Columns", getColumns(tableName)(db1)),
         E.apS("db2Columns", getColumns(tableName)(db2)),
         E.map(({ db1Columns, db2Columns }) => ({
-            db1_db2: [],
+            db1ColumnNames: pipe(db1Columns, A.map(col => col.name)),
+            db2ColumnNames: pipe(db2Columns, A.map(col => col.name))
+        })),
+        E.map(({ db1ColumnNames, db2ColumnNames }) => ([
+            getRows(db1ColumnNames, tableName, db1),
+            getRows(db2ColumnNames, tableName, db2)
+        ] as [E.Either<ts.Errors, Row[]>, E.Either<ts.Errors, Row[]>])),
+        E.chain(x => sequenceT(E.either)(...x)),
+        E.map(([db1Rows, db2Rows]) => ({
+            db1_db2: db1Rows,
             db2_db1: [],
             intersection: []
         }))
@@ -121,4 +141,27 @@ describe("single equal columns in both databases", () => {
         )
     })
 
+    test("no data (rows)", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        db1.prepare("INSERT INTO table1 VALUES (0)")
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+
+        pipe(
+            E.Do,
+            E.apS("diff", sqliteDataDiff("table1", db1, db2)),
+            E.apS("rows", getRows(["col1"], "table1", db1)),
+            E.fold(
+                errors => { failTest("this should not be reached")() },
+                ({ diff, rows }) => {
+                    expect(diff).toEqual({
+                        db1_db2: rows,
+                        db2_db1: [],
+                        intersection: []
+                    })
+                }
+            )
+        )
+    })
 })
