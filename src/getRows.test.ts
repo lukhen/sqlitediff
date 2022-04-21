@@ -1,29 +1,6 @@
 import * as s from "better-sqlite3"
 import * as E from "fp-ts/lib/Either"
-import { pipe } from "fp-ts/lib/function"
-import * as ts from "io-ts"
-import * as A from "fp-ts/lib/Array"
-interface Data {
-    colName: string,
-    value: string
-}
-
-type Row = Data[]
-
-// !!!
-const getRows:
-    (tableName: string, db: s.Database) => E.Either<ts.Errors, Row[]> =
-    (tableName, db) => pipe(
-        E.tryCatch(() => db.prepare(`SELECT * FROM ${tableName}`).all(), (e) => [e as ts.ValidationError]),
-        E.map(queryResult => pipe(
-            queryResult,
-            A.map(r => pipe(
-                Object.entries(r),
-                A.map(z => ({ colName: z[0], value: `${z[1]}` }))
-            ))
-        ))
-    )
-
+import { getRows } from "./functions"
 
 describe("getRows, multiple columns, multiple rows, different datatypes", () => {
     test("0 rows", () => {
