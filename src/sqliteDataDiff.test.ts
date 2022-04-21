@@ -131,7 +131,7 @@ describe("single equal columns in both databases", () => {
     test("one row in db1", () => {
         const db1 = new s.default(":memory:")
         db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
-        db1.prepare("INSERT INTO table1 VALUES (0)")
+        db1.prepare("INSERT INTO table1 VALUES (0)").run()
         const db2 = new s.default(":memory:")
         db2.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
 
