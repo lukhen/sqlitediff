@@ -25,6 +25,47 @@ const getRows:
     )
 
 
+describe("getRows, multiple columns, multiple rows, different datatypes", () => {
+    test("0 rows", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare(
+            "CREATE TABLE table1 (col1 INTEGER PRIMARY KEY, col2 NULL, col3 REAL, col4 TEXT, col5 BLOB)"
+        ).run()
+        db1.prepare("INSERT INTO table1 VALUES (1, null, 2.345, 'multiline text', 'blob')").run()
+        db1.prepare("INSERT INTO table1 VALUES (2, null, 5.678, 'multiline text', null)").run()
+        db1.prepare("INSERT INTO table1 VALUES (3, null, 2.345, 'multiline text', 1)").run()
+        db1.prepare("INSERT INTO table1 VALUES (4, null, 0.123, 'multiline text', 'blob')").run()
+        db1.prepare("INSERT INTO table1 VALUES (5, null, -1000.00000001, 'multiline text', 2.34)").run()
+        expect(getRows("table1", db1)).toEqual(E.right([
+            [{ colName: "col1", value: "1" },
+            { colName: "col2", value: "null" },
+            { colName: "col3", value: "2.345" },
+            { colName: "col4", value: "multiline text" },
+            { colName: "col5", value: "blob" }],
+            [{ colName: "col1", value: "2" },
+            { colName: "col2", value: "null" },
+            { colName: "col3", value: "5.678" },
+            { colName: "col4", value: "multiline text" },
+            { colName: "col5", value: "null" }],
+            [{ colName: "col1", value: "3" },
+            { colName: "col2", value: "null" },
+            { colName: "col3", value: "2.345" },
+            { colName: "col4", value: "multiline text" },
+            { colName: "col5", value: "1" }],
+            [{ colName: "col1", value: "4" },
+            { colName: "col2", value: "null" },
+            { colName: "col3", value: "0.123" },
+            { colName: "col4", value: "multiline text" },
+            { colName: "col5", value: "blob" }],
+            [{ colName: "col1", value: "5" },
+            { colName: "col2", value: "null" },
+            { colName: "col3", value: "-1000.00000001" },
+            { colName: "col4", value: "multiline text" },
+            { colName: "col5", value: "2.34" }]
+        ]))
+    })
+})
+
 describe("getRows, 1 column table", () => {
     test("0 rows", () => {
         const db1 = new s.default(":memory:")
