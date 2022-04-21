@@ -8,13 +8,7 @@ import * as _ from "lodash"
 import * as A from "fp-ts/lib/Array"
 import { sequenceT } from "fp-ts/lib/Apply"
 import { getRows } from "./functions"
-
-interface Data {
-    colName: string,
-    value: string
-}
-
-type Row = Data[]
+import { Row } from "./types/Data"
 
 interface DataDiff {
     db1_db2: Row[]
