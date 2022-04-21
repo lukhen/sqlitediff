@@ -2,6 +2,20 @@ import * as s from "better-sqlite3"
 import * as E from "fp-ts/lib/Either"
 import { getRows } from "./functions"
 
+describe("getRows, no such table", () => {
+    test("empty database", () => {
+        const db1 = new s.default(":memory:")
+        expect(E.isLeft(getRows("table1", db1))).toBeTruthy()
+    })
+
+    test("single table, but different name", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        expect(E.isLeft(getRows("table2", db1))).toBeTruthy()
+    })
+
+})
+
 describe("getRows, multiple columns, multiple rows, different datatypes", () => {
     test("0 rows", () => {
         const db1 = new s.default(":memory:")
