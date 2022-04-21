@@ -21,6 +21,7 @@ export const failTest: (msg: string) => IO.IO<void> =
     msg => () => { expect(msg).toEqual(0) } // always fails
 
 
+// REFACTOR: possible srp violation, should be 2 functions
 export const getRows: (tableName: string, db: s.Database) => E.Either<ts.Errors, Row[]> = (tableName, db) => pipe(
     E.tryCatch(() => db.prepare(`SELECT * FROM ${tableName}`).all(), (e) => [e as ts.ValidationError]),
     E.map(queryResult => pipe(
