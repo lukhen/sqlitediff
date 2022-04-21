@@ -29,18 +29,9 @@ const sqliteDataDiff:
     (tableName: string, db1: s.Database, db2: s.Database) => E.Either<ts.Errors, DataDiff> =
     (tableName, db1, db2) => pipe(
         E.Do,
-        E.apS("db1Columns", getColumns(tableName)(db1)),
-        E.apS("db2Columns", getColumns(tableName)(db2)),
-        E.map(({ db1Columns, db2Columns }) => ({
-            db1ColumnNames: pipe(db1Columns, A.map(col => col.name)),
-            db2ColumnNames: pipe(db2Columns, A.map(col => col.name))
-        })),
-        E.map(({ db1ColumnNames, db2ColumnNames }) => ([
-            getRows(tableName, db1),
-            getRows(tableName, db2)
-        ] as [E.Either<ts.Errors, Row[]>, E.Either<ts.Errors, Row[]>])),
-        E.chain(x => sequenceT(E.either)(...x)),
-        E.map(([db1Rows, db2Rows]) => ({
+        E.apS("db1Rows", getRows(tableName, db1)),
+        E.apS("db2Rows", getRows(tableName, db2)),
+        E.map(({ db1Rows, db2Rows }) => ({
             db1_db2: db1Rows,
             db2_db1: [],
             intersection: []
@@ -59,7 +50,7 @@ describe("sqliteDataDiff, no such table", () => {
             diff,
             E.fold(
                 errors => {
-                    expect(errors[0].message).toEqual("no such table")
+                    expect(errors[0].message).toEqual("no such table: table1")
                 },
                 diff => {
                     failTest("this should not be reached")()
@@ -79,7 +70,7 @@ describe("sqliteDataDiff, no such table", () => {
             diff,
             E.fold(
                 errors => {
-                    expect(errors[0].message).toEqual("no such table")
+                    expect(errors[0].message).toEqual("no such table: table1")
                 },
                 diff => {
                     failTest("this should not be reached")()
@@ -99,7 +90,7 @@ describe("sqliteDataDiff, no such table", () => {
             diff,
             E.fold(
                 errors => {
-                    expect(errors[0].message).toEqual("no such table")
+                    expect(errors[0].message).toEqual("no such table: table1")
                 },
                 diff => {
                     failTest("this should not be reached")()
