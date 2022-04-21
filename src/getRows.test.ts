@@ -25,10 +25,10 @@ const getRows:
     )
 
 
-describe("getRows", () => {
+describe("getRows, 1 column table", () => {
     test("0 rows", () => {
         const db1 = new s.default(":memory:")
-        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY, col2 INTEGER)").run()
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
         expect(getRows("table1", db1)).toEqual(E.right([]))
     })
 
@@ -51,4 +51,25 @@ describe("getRows", () => {
             ])
         )
     })
+
+    test("5 rows, 1 column", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        db1.prepare("INSERT INTO table1 VALUES (1)").run()
+        db1.prepare("INSERT INTO table1 VALUES (2)").run()
+        db1.prepare("INSERT INTO table1 VALUES (3)").run()
+        db1.prepare("INSERT INTO table1 VALUES (4)").run()
+        db1.prepare("INSERT INTO table1 VALUES (5)").run()
+
+        expect(getRows("table1", db1)).toEqual(
+            E.right([
+                [{ colName: "col1", value: "1" }],
+                [{ colName: "col1", value: "2" }],
+                [{ colName: "col1", value: "3" }],
+                [{ colName: "col1", value: "4" }],
+                [{ colName: "col1", value: "5" }]
+            ])
+        )
+    })
+
 })
