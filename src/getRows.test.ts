@@ -17,7 +17,10 @@ const getRows:
         E.tryCatch(() => db.prepare(`SELECT * FROM ${tableName}`).all(), (e) => [e as ts.ValidationError]),
         E.map(queryResult => pipe(
             queryResult,
-            A.map(r => ([{ colName: "col1", value: "1" }]))
+            A.map(r => pipe(
+                Object.entries(r),
+                A.map(z => ({ colName: z[0], value: `${z[1]}` }))
+            ))
         ))
     )
 
@@ -36,4 +39,16 @@ describe("getRows", () => {
         expect(getRows("table1", db1)).toEqual(E.right([[{ colName: "col1", value: "1" }]]))
     })
 
+    test("2 rows, 1 column", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        db1.prepare("INSERT INTO table1 VALUES (1)").run()
+        db1.prepare("INSERT INTO table1 VALUES (2)").run()
+        expect(getRows("table1", db1)).toEqual(
+            E.right([
+                [{ colName: "col1", value: "1" }],
+                [{ colName: "col1", value: "2" }]
+            ])
+        )
+    })
 })
