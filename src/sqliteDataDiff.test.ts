@@ -7,6 +7,8 @@ import * as ts from "io-ts"
 import * as _ from "lodash"
 import * as A from "fp-ts/lib/Array"
 import { sequenceT } from "fp-ts/lib/Apply"
+import { getRows } from "./functions"
+
 interface Data {
     colName: string,
     value: string
@@ -19,12 +21,6 @@ interface DataDiff {
     db2_db1: Row[]
     intersection: Row[]
 }
-
-// !!!
-const getRows:
-    (columnNames: string[], tableName: string, db: s.Database) => E.Either<ts.Errors, Row[]> =
-    (columnNames, tableName, db) => E.right([])
-
 
 /*
 ASSUME: getColumns(tableName)(db1) == getColumns(tableName)(db2)
@@ -40,8 +36,8 @@ const sqliteDataDiff:
             db2ColumnNames: pipe(db2Columns, A.map(col => col.name))
         })),
         E.map(({ db1ColumnNames, db2ColumnNames }) => ([
-            getRows(db1ColumnNames, tableName, db1),
-            getRows(db2ColumnNames, tableName, db2)
+            getRows(tableName, db1),
+            getRows(tableName, db2)
         ] as [E.Either<ts.Errors, Row[]>, E.Either<ts.Errors, Row[]>])),
         E.chain(x => sequenceT(E.either)(...x)),
         E.map(([db1Rows, db2Rows]) => ({
@@ -151,7 +147,7 @@ describe("single equal columns in both databases", () => {
         pipe(
             E.Do,
             E.apS("diff", sqliteDataDiff("table1", db1, db2)),
-            E.apS("rows", getRows(["col1"], "table1", db1)),
+            E.apS("rows", getRows("table1", db1)),
             E.fold(
                 errors => { failTest("this should not be reached")() },
                 ({ diff, rows }) => {
