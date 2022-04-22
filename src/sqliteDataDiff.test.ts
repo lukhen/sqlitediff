@@ -8,7 +8,7 @@ import * as _ from "lodash"
 import * as A from "fp-ts/lib/Array"
 import { sequenceT } from "fp-ts/lib/Apply"
 import { getRows } from "./functions"
-import { Row } from "./types/Data"
+import { Row, rowEq } from "./types/Data"
 
 interface DataDiff {
     db1_db2: Row[]
@@ -26,9 +26,9 @@ const sqliteDataDiff:
         E.apS("db1Rows", getRows(tableName, db1)),
         E.apS("db2Rows", getRows(tableName, db2)),
         E.map(({ db1Rows, db2Rows }) => ({
-            db1_db2: db1Rows,
-            db2_db1: db2Rows,
-            intersection: []
+            db1_db2: A.difference(rowEq)(db2Rows)(db1Rows),
+            db2_db1: A.difference(rowEq)(db1Rows)(db2Rows),
+            intersection: A.intersection(rowEq)(db1Rows)(db2Rows)
         }))
 
     )
@@ -170,4 +170,30 @@ describe("single equal columns in both databases", () => {
             )
         )
     })
+
+    test("one row in each db, rows are equal", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        db1.prepare("INSERT INTO table1 VALUES (0)").run()
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        db2.prepare("INSERT INTO table1 VALUES (0)").run()
+
+        pipe(
+            E.Do,
+            E.apS("diff", sqliteDataDiff("table1", db1, db2)),
+            E.apS("rows", getRows("table1", db1)),
+            E.fold(
+                errors => { failTest("this should not be reached")() },
+                ({ diff, rows }) => {
+                    expect(diff).toEqual({
+                        db1_db2: [],
+                        db2_db1: [],
+                        intersection: rows
+                    })
+                }
+            )
+        )
+    })
+
 })
