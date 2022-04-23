@@ -222,4 +222,47 @@ describe("single equal columns in both databases", () => {
         )
     })
 
+
+    test("multiple rows, multiple different type columns", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare(
+            "CREATE TABLE table1 (col1 INTEGER PRIMARY KEY, col2 NULL, col3 REAL, col4 TEXT, col5 BLOB)"
+        ).run()
+        db1.prepare("INSERT INTO table1 VALUES (999, null, 2.345, 'multiline text', 'blob')").run()
+        db1.prepare("INSERT INTO table1 VALUES (2, null, 5.678, 'multiline text', null)").run()
+        db1.prepare("INSERT INTO table1 VALUES (3, null, 2.345, 'multiline text', 1)").run()
+        db1.prepare("INSERT INTO table1 VALUES (4, null, 0.123, 'multiline text', 'blob')").run()
+        db1.prepare("INSERT INTO table1 VALUES (5, null, -1000.00000001, 'multiline text', 2.34)").run()
+
+
+        const db2 = new s.default(":memory:")
+
+        db2.prepare(
+            "CREATE TABLE table1 (col1 INTEGER PRIMARY KEY, col2 NULL, col3 REAL, col4 TEXT, col5 BLOB)"
+        ).run()
+        db2.prepare("INSERT INTO table1 VALUES (1, null, 2.345, 'multiline text', 'blob')").run()
+        db2.prepare("INSERT INTO table1 VALUES (2, null, 5.678, 'multiline text', null)").run()
+        db2.prepare("INSERT INTO table1 VALUES (3, null, 2.345, 'multiline text', 1)").run()
+        db2.prepare("INSERT INTO table1 VALUES (4, null, 0.123, 'multiline text', 'blob')").run()
+        db2.prepare("INSERT INTO table1 VALUES (5, null, -1000.00000002, 'multiline text', 2.34)").run()
+
+        pipe(
+            E.Do,
+            E.apS("diff", sqliteDataDiff("table1", db1, db2)),
+            E.apS("db1Rows", getRows("table1", db1)),
+            E.apS("db2Rows", getRows("table1", db2)),
+            E.fold(
+                errors => { failTest("this should not be reached")() },
+                ({ diff, db1Rows, db2Rows }) => {
+                    expect(diff).toEqual({
+                        db1_db2: [db1Rows[3], db1Rows[4]],
+                        db2_db1: [db2Rows[0], db2Rows[4]],
+                        intersection: [db1Rows[0], db1Rows[1], db1Rows[2]]
+                    })
+                }
+            )
+        )
+    })
+
+
 })
