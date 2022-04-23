@@ -196,4 +196,30 @@ describe("single equal columns in both databases", () => {
         )
     })
 
+    test("one row in each db, rows are not equal", () => {
+        const db1 = new s.default(":memory:")
+        db1.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        db1.prepare("INSERT INTO table1 VALUES (0)").run()
+        const db2 = new s.default(":memory:")
+        db2.prepare("CREATE TABLE table1 (col1 INTEGER PRIMARY KEY)").run()
+        db2.prepare("INSERT INTO table1 VALUES (1)").run()
+
+        pipe(
+            E.Do,
+            E.apS("diff", sqliteDataDiff("table1", db1, db2)),
+            E.apS("db1Rows", getRows("table1", db1)),
+            E.apS("db2Rows", getRows("table1", db2)),
+            E.fold(
+                errors => { failTest("this should not be reached")() },
+                ({ diff, db1Rows, db2Rows }) => {
+                    expect(diff).toEqual({
+                        db1_db2: db1Rows,
+                        db2_db1: db2Rows,
+                        intersection: []
+                    })
+                }
+            )
+        )
+    })
+
 })
