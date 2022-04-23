@@ -16,9 +16,7 @@ interface DataDiff {
     intersection: Row[]
 }
 
-/*
-ASSUME: getColumns(tableName)(db1) == getColumns(tableName)(db2)
-*/
+
 const sqliteDataDiff:
     (tableName: string, db1: s.Database, db2: s.Database) => E.Either<ts.Errors, DataDiff> =
     (tableName, db1, db2) => pipe(
