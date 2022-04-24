@@ -1,5 +1,5 @@
 import * as ts from "io-ts"
-import { getQueryResult } from "../functions"
+import { getQueryResult } from "../getQueryResult"
 
 const tableCodec = ts.type({
     name: ts.string

@@ -3,33 +3,9 @@ import * as E from "fp-ts/lib/Either"
 import { getColumns } from "./quries/tableColumns"
 import { failTest } from "./functions"
 import { pipe } from "fp-ts/lib/function"
-import * as ts from "io-ts"
 import * as _ from "lodash"
-import * as A from "fp-ts/lib/Array"
 import { sequenceT } from "fp-ts/lib/Apply"
-import { getRows } from "./functions"
-import { Row, rowEq } from "./types/Data"
-
-interface DataDiff {
-    db1_db2: Row[]
-    db2_db1: Row[]
-    intersection: Row[]
-}
-
-
-const sqliteDataDiff:
-    (tableName: string, db1: s.Database, db2: s.Database) => E.Either<ts.Errors, DataDiff> =
-    (tableName, db1, db2) => pipe(
-        E.Do,
-        E.apS("db1Rows", getRows(tableName, db1)),
-        E.apS("db2Rows", getRows(tableName, db2)),
-        E.map(({ db1Rows, db2Rows }) => ({
-            db1_db2: A.difference(rowEq)(db2Rows)(db1Rows),
-            db2_db1: A.difference(rowEq)(db1Rows)(db2Rows),
-            intersection: A.intersection(rowEq)(db1Rows)(db2Rows)
-        }))
-
-    )
+import { getRows, sqliteDataDiff } from "./functions"
 
 describe("sqliteDataDiff, no such table", () => {
     test("in both databases", () => {

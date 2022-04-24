@@ -1,5 +1,5 @@
 import * as ts from "io-ts";
-import { getQueryResult } from "../functions"
+import { getQueryResult } from "../getQueryResult";
 import * as s from "better-sqlite3"
 import * as E from "fp-ts/lib/Either"
 import { getTables } from "./dbtables"

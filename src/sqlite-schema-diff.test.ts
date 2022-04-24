@@ -1,35 +1,8 @@
 import * as s from "better-sqlite3"
 import { pipe } from "fp-ts/lib/function"
 import * as E from "fp-ts/lib/Either"
-import { failTest } from "./functions"
+import { failTest, sqliteSchemaDiff } from "./functions"
 import { getTables } from "./quries/dbtables"
-import { SchemaDiff } from "./types/SchemaDiff"
-import * as A from "fp-ts/lib/Array"
-import * as ts from "io-ts";
-import * as _ from "lodash"
-
-export const sqliteSchemaDiff:
-    (db1: s.Database, db2: s.Database) => E.Either<ts.Errors, SchemaDiff> =
-    (db1, db2) => {
-        return pipe(
-            E.Do,
-            E.apS('db1Tables', getTables(db1)),
-            E.apS('db2Tables', getTables(db2)),
-            E.map(({ db1Tables, db2Tables }) => ({
-                db1TableNames: pipe(db1Tables, A.map(table => table.name)),
-                db2TableNames: pipe(db2Tables, A.map(table => table.name))
-            })),
-            E.map(({ db1TableNames, db2TableNames }) => (
-                {
-                    tables_db1_db2: _.difference(db1TableNames, db2TableNames),
-                    tables_intersection: _.intersection(db1TableNames, db2TableNames),
-                    tables_db2_db1: _.difference(db2TableNames, db1TableNames)
-                }
-            ))
-
-        )
-    }
-
 
 describe("sqliteSchemaDiff", () => {
     test("empty databases", () => {
